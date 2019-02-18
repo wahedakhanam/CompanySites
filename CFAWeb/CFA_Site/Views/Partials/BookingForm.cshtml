@@ -1,0 +1,106 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<CFA_Site.Models.BookingViewModel>
+@{ 
+
+}
+@if (Model.EventDetails != null && Model.EventDetails.Name != null && Model.EventDetails.Date_DateTime >= DateTime.Today)
+{
+    if (Model.EventDetails.AllocatedTickets < Model.EventDetails.AvailableTickets || Model.EventDetails.AvailableTickets == null || Model.EventDetails.AvailableTickets == 0)
+    {
+        using (Html.BeginUmbracoForm<CFA_Site.Controllers.BookingSurfaceController>("HandleBookingSubmit", "BookingSurface", new { booking = Model }))
+        {
+            <div class="col-xs-12 col-md-6 col-md-push-3">
+                <section>
+                    <div id="booking" class="col-xs-12 booking form">
+                        <h3>Book your place</h3>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Spaces, "Spaces", new { @name = "spacesLbl", @class = "frmLabel" })
+                            @Html.DropDownListFor(m => m.Spaces, new SelectList(Enumerable.Range(1, 15)))
+                            @Html.ValidationMessageFor(m => m.Spaces)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Name, "Name", new { @name = "nameLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.Name, new { @class = "span3", placeholder = "Name" })
+                            @Html.ValidationMessageFor(m => m.Name)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.DelegateNames, "Delegate Names", new { @name = "delNameLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.DelegateNames, new { @class = "span3", placeholder = "Delegate Names" })
+                            @Html.ValidationMessageFor(m => m.DelegateNames)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Position, "Position", new { @name = "positionLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.Position, new { @class = "span3", placeholder = "Position" })
+                            @Html.ValidationMessageFor(m => m.Position)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Organisation, "Organisation", new { @name = "organisationLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.Organisation, new { @class = "span3", placeholder = "Organisation" })
+                            @Html.ValidationMessageFor(m => m.Organisation)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Telephone, "Telephone", new { @name = "telephoneLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.Telephone, new { @class = "span3", placeholder = "Telephone number" })
+                            @Html.ValidationMessageFor(m => m.Telephone)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Email, "Email", new { @name = "emailLbl", @class = "frmLabel" })
+                            @Html.TextBoxFor(m => m.Email, new { @class = "span3", placeholder = "Email address" })
+                            @Html.ValidationMessageFor(m => m.Email)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Address, "Address", new { @name = "addressLbl", @class = "frmLabel" })
+                            @Html.TextAreaFor(m => m.Address, new { @class = "span3", placeholder = "Address details", @style = "resize: none;" })
+                            @Html.ValidationMessageFor(m => m.Address)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Source, "Source: ", new { @name = "sourceLbl", @class = "frmLabel" })
+                            @Html.DropDownListFor(m => m.Source, Model.SourceItems, " -- Please select an option -- ", new { @id = "Source" })
+                            @Html.ValidationMessageFor(m => m.Source)
+                            @Html.HiddenFor(m => m.SelectedSource)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.DietaryRequirements, "Special Dietary Requirements", new { @name = "dietaryRequirementsLbl" })
+                            @Html.TextBoxFor(m => m.DietaryRequirements, new { @class = "span3", placeholder = "Special Dietary Requirements" })
+                            @Html.ValidationMessageFor(m => m.DietaryRequirements)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.Comments, "Comments", new { @name = "commentsLbl" })
+                            @Html.TextAreaFor(m => m.Comments, new { @class = "span3", placeholder = "Comments", @style = "resize: none;" })
+                            @Html.ValidationMessageFor(m => m.Comments)
+                        </div>
+                        <div class="controls controls-row">
+                            @Html.LabelFor(m => m.AcceptTCs, "Accept T&Cs?", new { @name = "acceptTCsLbl", @class = "frmLabel" })
+                            @Html.CheckBoxFor(m => m.AcceptTCs, new { @class = "span3" })
+                            @Html.ValidationMessageFor(m => m.AcceptTCs)
+                        </div>
+
+                        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+                        <div class="g-recaptcha" data-sitekey="6LfeoxwTAAAAAGC739TRN_tdmAQX5YZ12VNKNcLB"></div>
+                        <p class="error">@TempData["reCapthcaMessage"]</p>
+
+                        <div class="controls">
+                            <button id="contact-submit" type="submit" class="btn btn-primary">Submit</button>
+                            <p class="error">@TempData["Status"]</p>
+                        </div>
+                        @Html.HiddenFor(m => m.EventDetails.Name)
+                        @Html.HiddenFor(m => m.EventDetails.Id)
+                    </div>
+                </section>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-xs-12 col-md-9 body-wrapper">
+            <h3>This event is fully booked</h3>
+            <a class="btn btn-large btn-primary" href="/events">Return to Events</a>
+        </div>
+    }
+}
+else
+{
+    <div class="col-xs-12 col-md-9 body-wrapper">
+        <h3>Event not available</h3>
+        <a class="btn btn-large btn-primary" href="/events">Return to Events</a>
+    </div>
+}

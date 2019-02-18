@@ -1,0 +1,109 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoTemplatePage
+@using Examine
+@using Examine.SearchCriteria
+@using Examine.LuceneEngine.SearchCriteria
+@using USN.BusinessLogic;
+
+@{
+    string searchTerm = String.IsNullOrWhiteSpace(Request.QueryString["keywords"]) ? "" : Request.QueryString["keywords"];
+
+    string[] fields = new[] { "homepageFeaturesSummary", "bodyText", "imageCaption", "intro", "bodyContent", "body", "author" };
+    var searcher = ExamineManager.Instance;
+    var searchCriteria = searcher.CreateSearchCriteria();
+    var query = searchCriteria.GroupedOr(fields, searchTerm).Compile();
+
+    // Get Search Results - additional criteria added so past events are not returned 
+    var searchResults = searcher.Search(query).Where(r => r["__IndexType"] == "content" && (r["nodeTypeAlias"] != "Event" || (r["nodeTypeAlias"] == "Event" && DateTime.Parse(r["date"]) >= DateTime.Today))).ToList();
+
+    var noResults = searchResults.Count();
+
+    @*Paging*@
+    var pageSize = Model.Content.HasValue("itemsPerPage") ? Model.Content.GetPropertyValue<int>("itemsPerPage") : 3;
+    var page = 1;
+    int.TryParse(Request.QueryString["page"], out page);
+
+    int totalCount = searchResults.Count();
+    var totalPages = (int)Math.Ceiling((double)totalCount / (double)pageSize);
+    if (page > totalPages)
+    {
+        page = totalPages;
+    }
+    else if (page < 1)
+    {
+        page = 1;
+    }
+}
+
+<div id="searchLibraryBox" class="search-box">
+    <div id="chevron-wrapper">
+        <i id="search-chevron" class="fa fa-chevron-circle-right"></i>
+    </div>
+    <input type="text" id="search-input" class="form-control" name="searchTerm" placeholder="Site Search" value="@searchTerm" />
+    <button id="search-button" class="btn btn-search">
+        <i class="glyphicon glyphicon-search"></i>
+    </button>
+</div>
+
+@if (@searchTerm != "")
+{
+    <p class="search-outcome clear">You searched for <strong class="accent">@searchTerm</strong>, and found <strong class="accent">@noResults</strong> results</p>
+    <hr />
+    // Page size is an issue here so we may need to filter this earlier
+    foreach (SearchResult result in searchResults.Skip((page - 1) * pageSize).Take(pageSize))
+    {
+        var node = Umbraco.TypedContent(result.Id);
+        var pathIds = result["__Path"].Split(',');
+        var path = Umbraco.TypedContent(pathIds).Where(p => p != null).Select(p => new { p.Name }).ToList();
+
+        <div class="search-results-box">
+            <section class="results-box">
+                <h3>
+                    <a href="@node.Url">@String.Join(" > ", path.Select(p => p.Name))</a>
+                </h3>
+                @if (result.Fields.ContainsKey("title"))
+                {
+                    <p class="results-title"><strong>@result["title"]</strong></p>
+                }
+                else
+                {
+                    <p class="results-title"><strong>@node.Name</strong></p>
+                }
+                @{
+                    var textString = result.Fields.Where(x => fields.Any(d => d.Contains(x.Key)) && x.Value.ToLower().Contains(searchTerm.ToLower())).First();
+                    <p>@textString.Value.Truncate(250)</p>
+                }
+            </section>
+            <hr />
+        </div>
+    }
+
+    @* Paging *@
+    if (totalPages > 1)
+    {
+        <div class="paging">
+            <div class="total">
+                Total @totalCount
+            </div>
+            <ul class="pagination">
+                @if (page > 1)
+                {
+                    <li><a href="?keywords=@searchTerm&page=@(page-1)">Prev</a></li>
+                }
+                @for (int p = 1; p < totalPages + 1; p++)
+                {
+                    <li class="@(p == page ? "active" : string.Empty)">
+                        <a href="?keywords=@searchTerm&page=@p">@p</a>
+                    </li>
+                }
+                @if (page < totalPages)
+                {
+                    <li><a href="?keywords=@searchTerm&page=@(page+1)">Next</a></li>
+                }
+            </ul>
+        </div>
+    }
+}
+else
+{
+    <p>Please enter a search term above</p>
+}
